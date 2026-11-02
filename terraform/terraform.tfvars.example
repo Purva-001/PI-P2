@@ -1,0 +1,5 @@
+cloudflare_account_id  = "YOUR_CLOUDFLARE_ACCOUNT_ID"
+cloudflare_api_token   = "YOUR_CLOUDFLARE_API_TOKEN"
+worker_name            = "student-task-manager"
+kv_namespace_name      = "student_tasks"
+environment            = "production"

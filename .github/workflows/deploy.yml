@@ -1,0 +1,48 @@
+name: Validate and deploy
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  terraform:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: AK-P2/terraform
+    env:
+      TF_VAR_cloudflare_account_id: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      TF_VAR_cloudflare_api_token: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+      - name: Initialize
+        run: terraform init
+      - name: Check formatting
+        run: terraform fmt -check
+      - name: Validate
+        run: terraform validate
+      - name: Plan
+        if: github.event_name == 'pull_request'
+        run: terraform plan
+      - name: Apply
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        run: terraform apply -auto-approve
+      - name: Upload application assets
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        working-directory: .
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          KV_ID=$(terraform -chdir=AK-P2/terraform output -raw kv_namespace_id)
+          cp AK-P2/wrangler.toml AK-P2/wrangler.deploy.toml
+          trap 'rm -f AK-P2/wrangler.deploy.toml' EXIT
+          sed -i "s/replace-with-terraform-output/$KV_ID/" AK-P2/wrangler.deploy.toml
+          npx wrangler deploy --config AK-P2/wrangler.deploy.toml

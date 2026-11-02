@@ -1,0 +1,11 @@
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfvars
+!.terraform.tfvars.example
+terraform.tfplan
+.wrangler/
+wrangler.deploy.toml
+node_modules/
+.env
+.DS_Store
